@@ -38,6 +38,14 @@ final class Runtime {
 	private const LIBRARY = 'sugarcommerce_geo';
 
 	/**
+	 * How many segments this class's own namespace has --
+	 * SugarCommerce\Geo\Utils -- before any prefix. Counted rather than
+	 * written out: Strauss rewrites a namespace it finds in a string, and
+	 * would prefix the very thing being compared against.
+	 */
+	private const OWN_SEGMENTS = 3;
+
+	/**
 	 * The prefix for this build's hooks.
 	 *
 	 * `sugarcommerce_geo` for a plain Composer install, and
@@ -63,13 +71,26 @@ final class Runtime {
 	 * @since 1.0.0
 	 */
 	public static function prefix_for( string $under ): string {
-		$root = explode( '\\', ltrim( $under, '\\' ) )[0];
+		$under = explode( '\\', trim( $under, '\\' ) );
 
-		if ( '' === $root || 'SugarCommerce' === $root ) {
+		// What Strauss put in front of this package's own namespace. A
+		// plugin of the SugarCommerce family prefixes with a namespace that
+		// starts "SugarCommerce\" too -- "SugarCommerce\Playground\Vendor\"
+		// -- so the first segment alone cannot tell a prefixed build from an
+		// unprefixed one: it named both "sugarcommerce_geo", and that
+		// plugin's flags filter was every unprefixed copy's.
+		$segments = array_slice( $under, 0, -self::OWN_SEGMENTS );
+
+		if ( [] === $segments || '' === $segments[0] ) {
 			return self::LIBRARY;
 		}
 
-		$slug = strtolower( trim( (string) preg_replace( '/[^A-Za-z0-9]+/', '_', $root ), '_' ) );
+		// Only the first segment, as it always was, where that is enough:
+		// "SugarCart\Vendor" is "sugarcart". A family plugin's prefix needs
+		// all of its segments to be told apart from the library and from
+		// its siblings.
+		$name = 'SugarCommerce' === $segments[0] ? implode( '_', $segments ) : $segments[0];
+		$slug = strtolower( trim( (string) preg_replace( '/[^A-Za-z0-9]+/', '_', $name ), '_' ) );
 
 		return '' === $slug ? self::LIBRARY : $slug . '_' . self::LIBRARY;
 	}

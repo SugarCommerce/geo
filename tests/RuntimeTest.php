@@ -54,4 +54,21 @@ final class RuntimeTest extends TestCase {
 			'nothing at all'      => [ '', 'sugarcommerce_geo' ],
 		];
 	}
+
+	/**
+	 * A plugin of the family prefixes with a namespace that also starts
+	 * "SugarCommerce", and its build is still its own.
+	 */
+	public function test_a_family_plugin_build_is_not_taken_for_the_library(): void {
+		$playground = Runtime::prefix_for( 'SugarCommerce\\Playground\\Vendor\\SugarCommerce\\Geo\\Utils' );
+
+		$this->assertSame( 'sugarcommerce_playground_vendor_sugarcommerce_geo', $playground );
+		$this->assertNotSame(
+			$playground,
+			Runtime::prefix_for( 'SugarCommerce\\Kitchen\\Vendor\\SugarCommerce\\Geo\\Utils' ),
+			'Two plugins of the family share a name.'
+		);
+		$this->assertSame( 'sugarcart_sugarcommerce_geo', Runtime::prefix_for( 'SugarCart\\Vendor\\SugarCommerce\\Geo\\Utils' ), 'A plugin outside the family keeps its name.' );
+		$this->assertSame( 'sugarcommerce_geo', Runtime::prefix_for( '\\SugarCommerce\\Geo\\Utils\\' ) );
+	}
 }

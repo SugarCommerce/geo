@@ -89,7 +89,11 @@ the one asset-URL helper of these packages, so geo requires that package.
 
 In a plugin built with Strauss the hook carries the plugin's prefix
 (`SugarCart\Vendor\…` gives `sugarcart_sugarcommerce_geo_flags_url`), so two
-plugins bundling the library never answer each other's filter.
+plugins bundling the library never answer each other's filter. A prefix that
+itself starts `SugarCommerce\` keeps all its segments --
+`SugarCommerce\Playground\Vendor\` gives
+`sugarcommerce_playground_vendor_sugarcommerce_geo_flags_url` -- so a plugin
+of the family is never taken for an unprefixed copy.
 
 `is_high_risk()` is a signal to weigh, not a reason to refuse. `is_sanctioned()`
 is a coarse first gate, not a compliance product: both are point-in-time lists.
