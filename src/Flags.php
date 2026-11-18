@@ -17,6 +17,7 @@ declare( strict_types=1 );
 
 namespace SugarCommerce\Geo;
 
+use SugarCommerce\Plugin\Assets;
 use SugarCommerce\Geo\Utils\Runtime;
 
 /**
@@ -169,12 +170,11 @@ class Flags {
 	/**
 	 * Where the folder of flags is on the web.
 	 *
-	 * Worked out from where this file is, because the library has no home
-	 * of its own: it is in a plugin's `vendor/`, or copied under another
-	 * name by Strauss (`libraries/sugarcommerce/geo/`), or beside the
-	 * plugins as a checkout. Wherever that is, it is under the content
-	 * directory or the WordPress root on nearly every site, and a symlinked
-	 * plugin is found through the map core keeps for plugins_url().
+	 * Worked out from where this file is, by sugarcommerce/plugin's
+	 * `Assets::path_to_url()` -- the one asset-URL helper of these packages
+	 * -- because the library has no home of its own: it is in a plugin's
+	 * `vendor/`, copied under another name by Strauss, or beside the
+	 * plugins as a checkout.
 	 *
 	 * @return string With a trailing slash. Empty when it cannot be said --
 	 *                the library is outside the web root, say -- and the
@@ -183,7 +183,7 @@ class Flags {
 	 */
 	public static function base_url(): string {
 		if ( false === self::$base ) {
-			self::$base = self::dir_url( self::dir() );
+			self::$base = Assets::path_to_url( rtrim( self::dir(), '/' ) );
 		}
 
 		/**
@@ -204,54 +204,6 @@ class Flags {
 		$url = (string) apply_filters( Runtime::hook( 'flags_url' ), (string) self::$base, self::dir() );
 
 		return '' === $url ? '' : rtrim( $url, '/' ) . '/';
-	}
-
-	/**
-	 * The URL of a directory on disk.
-	 *
-	 * Public so that it can be tested with directories this file is not in.
-	 * Nothing outside the library should need it.
-	 *
-	 * @param string $dir An absolute path.
-	 *
-	 * @return string|null With a trailing slash, or null when the directory
-	 *                     is under nothing with a known URL.
-	 * @since 1.0.0
-	 */
-	public static function dir_url( string $dir ): ?string {
-		$dir = rtrim( wp_normalize_path( $dir ), '/' );
-
-		$bases = [];
-
-		if ( defined( 'WP_CONTENT_DIR' ) ) {
-			$bases[] = [ WP_CONTENT_DIR, content_url() ];
-		}
-
-		$bases[] = [ ABSPATH, site_url( '/' ) ];
-
-		foreach ( $bases as [ $base, $base_url ] ) {
-			$base = rtrim( wp_normalize_path( (string) $base ), '/' );
-
-			// A prefix, and a whole one: /srv/www is not the start of
-			// /srv/www2/flags.
-			if ( '' !== $base && str_starts_with( $dir . '/', $base . '/' ) ) {
-				return rtrim( (string) $base_url, '/' ) . substr( $dir, strlen( $base ) ) . '/';
-			}
-		}
-
-		// __DIR__ resolves symlinks, so a symlinked plugin's real path can
-		// be anywhere on disk. Core maps each one back to its path under
-		// the plugins directory.
-		foreach ( (array) ( $GLOBALS['wp_plugin_paths'] ?? [] ) as $plugin_path => $real_path ) {
-			$real_path = rtrim( wp_normalize_path( (string) $real_path ), '/' );
-			$mapped    = rtrim( wp_normalize_path( (string) $plugin_path ), '/' ) . substr( $dir, strlen( $real_path ) );
-
-			if ( '' !== $real_path && str_starts_with( $dir . '/', $real_path . '/' ) && $mapped !== $dir ) {
-				return self::dir_url( $mapped );
-			}
-		}
-
-		return null;
 	}
 
 	/**

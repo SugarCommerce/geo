@@ -185,56 +185,6 @@ final class FlagsTest extends TestCase {
 	}
 
 	/**
-	 * Wherever the library is put, the URL follows.
-	 */
-	public function test_a_directory_becomes_a_url(): void {
-		$content = WP_CONTENT_DIR;
-
-		// A plugin's vendor directory.
-		$this->assertSame(
-			'https://example.test/wp-content/plugins/shop/vendor/sugarcommerce/geo/assets/flags/',
-			Flags::dir_url( $content . '/plugins/shop/vendor/sugarcommerce/geo/assets/flags/' )
-		);
-
-		// A Strauss-prefixed copy.
-		$this->assertSame(
-			'https://example.test/wp-content/plugins/shop/libraries/sugarcommerce/geo/assets/flags/',
-			Flags::dir_url( $content . '/plugins/shop/libraries/sugarcommerce/geo/assets/flags' )
-		);
-
-		// A checkout beside the plugins.
-		$this->assertSame(
-			'https://example.test/wp-content/plugins/libraries/wp-countries/assets/flags/',
-			Flags::dir_url( $content . '/plugins/libraries/wp-countries/assets/flags' )
-		);
-
-		// Under the WordPress root and not the content directory.
-		$this->assertSame( 'https://example.test/core/lib/flags/', Flags::dir_url( ABSPATH . 'lib/flags' ) );
-
-		// A directory whose name only starts like the content directory's
-		// is not in it: here it is beside it, under the WordPress root.
-		$this->assertSame( 'https://example.test/core/assets-other/flags/', Flags::dir_url( $content . '-other/flags' ) );
-		$this->assertNull( Flags::dir_url( rtrim( ABSPATH, '/' ) . '-other/flags' ) );
-		$this->assertNull( Flags::dir_url( '/somewhere/else/flags' ) );
-	}
-
-	/**
-	 * A symlinked plugin is found through core's map of real paths.
-	 */
-	public function test_a_symlinked_plugin_is_mapped_back(): void {
-		$GLOBALS['wp_plugin_paths'] = [
-			WP_CONTENT_DIR . '/plugins/shop' => '/Users/dev/code/shop',
-		];
-
-		$this->assertSame(
-			'https://example.test/wp-content/plugins/shop/vendor/sugarcommerce/geo/assets/flags/',
-			Flags::dir_url( '/Users/dev/code/shop/vendor/sugarcommerce/geo/assets/flags' )
-		);
-
-		$this->assertNull( Flags::dir_url( '/Users/dev/code/shop-two/flags' ) );
-	}
-
-	/**
 	 * The emoji flag is two letters or nothing.
 	 */
 	public function test_the_emoji_flag_wants_letters(): void {

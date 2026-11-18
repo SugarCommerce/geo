@@ -12,8 +12,18 @@
     ],
     "require": {
         "php": ">=8.3",
-        "ext-mbstring": "*"
+        "ext-mbstring": "*",
+        "sugarcommerce/plugin": "dev-main"
     },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../plugin",
+            "options": {
+                "symlink": false
+            }
+        }
+    ],
     "autoload": {
         "psr-4": {
             "SugarCommerce\\Geo\\": "src/"

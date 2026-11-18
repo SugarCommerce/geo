@@ -84,6 +84,9 @@ To serve them from somewhere else:
 add_filter( 'sugarcommerce_geo_flags_url', fn() => 'https://cdn.example.com/flags/' );
 ```
 
+The folder's URL comes from `sugarcommerce/plugin`'s `Assets::path_to_url()`,
+the one asset-URL helper of these packages, so geo requires that package.
+
 In a plugin built with Strauss the hook carries the plugin's prefix
 (`SugarCart\Vendor\…` gives `sugarcart_sugarcommerce_geo_flags_url`), so two
 plugins bundling the library never answer each other's filter.
@@ -102,7 +105,8 @@ this package. Classes keep their names and methods under `SugarCommerce\Geo`.
 | `ArrayPress\Countries\Regions` | `SugarCommerce\Geo\Regions` (every method, same name) |
 | `ArrayPress\Countries\Addresses` | `SugarCommerce\Geo\Addresses` (every method, same name) |
 | `ArrayPress\Countries\AddressFormats` | `SugarCommerce\Geo\AddressFormats` |
-| `ArrayPress\Countries\Flags` | `SugarCommerce\Geo\Flags` (every method, same name) |
+| `ArrayPress\Countries\Flags` | `SugarCommerce\Geo\Flags` (every method, same name, but `dir_url()`) |
+| `Flags::dir_url( $dir )` | `SugarCommerce\Plugin\Assets::path_to_url( $dir )` -- no trailing slash, null outside WordPress |
 | filter `arraypress_countries_flags_url` | `sugarcommerce_geo_flags_url`, prefixed per Strauss build (`Utils\Runtime::hook( 'flags_url' )`) |
 | text domain `arraypress` (address labels) | `sugarcommerce` |
 | `get_country_name()` | `Countries::get_name()` |
