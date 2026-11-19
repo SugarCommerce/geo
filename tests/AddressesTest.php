@@ -229,13 +229,16 @@ final class AddressesTest extends TestCase {
 	public function test_a_form_gets_everything_it_needs(): void {
 		$this->assertSame(
 			[
-				'city'         => 'City',
-				'state'        => 'State',
-				'postcode'     => 'ZIP code',
-				'has_city'     => true,
-				'has_state'    => true,
-				'has_postcode' => true,
-				'has_states'   => true,
+				'city'             => 'City',
+				'state'            => 'State',
+				'postcode'         => 'ZIP code',
+				'has_city'         => true,
+				'has_state'        => true,
+				'has_postcode'     => true,
+				'has_states'       => true,
+				'required'         => [ 'street' => true, 'city' => true, 'state' => true, 'postcode' => true ],
+				'postcode_pattern' => '(\\d{5})(?:[ \\-](\\d{4}))?',
+				'postcode_example' => '95014',
 			],
 			Addresses::get_fields( ' us ' )
 		);
@@ -253,16 +256,26 @@ final class AddressesTest extends TestCase {
 		// Not chosen yet: every box, the general words, nothing to choose from.
 		$this->assertSame(
 			[
-				'city'         => 'Town or city',
-				'state'        => 'State, county or region',
-				'postcode'     => 'Postcode or ZIP',
-				'has_city'     => true,
-				'has_state'    => true,
-				'has_postcode' => true,
-				'has_states'   => false,
+				'city'             => 'Town or city',
+				'state'            => 'State, county or region',
+				'postcode'         => 'Postcode or ZIP',
+				'has_city'         => true,
+				'has_state'        => true,
+				'has_postcode'     => true,
+				'has_states'       => false,
+				'required'         => [ 'street' => true, 'city' => true, 'state' => false, 'postcode' => false ],
+				'postcode_pattern' => '',
+				'postcode_example' => '',
 			],
 			Addresses::get_fields( '' )
 		);
+
+		// Britain's postcode is checked; Hong Kong has none to check.
+		$this->assertSame( 'EC1Y 8SY', $gb['postcode_example'] );
+		$this->assertSame( Addresses::postcode_pattern( 'GB' ), $gb['postcode_pattern'] );
+		$this->assertFalse( $gb['required']['state'] );
+		$this->assertSame( '', Addresses::get_fields( 'HK' )['postcode_pattern'] );
+		$this->assertTrue( Addresses::get_fields( 'HK' )['required']['state'] );
 	}
 
 	/**
@@ -289,7 +302,9 @@ final class AddressesTest extends TestCase {
 		}
 
 		foreach ( AddressFormats::FORMATS as $code => $row ) {
-			$this->assertSame( [], array_diff( array_keys( $row ), [ 'format', 'latin', 'region', 'postcode', 'city' ] ), $code );
+			$this->assertSame( [], array_diff( array_keys( $row ), [ 'format', 'latin', 'region', 'postcode', 'city', 'require', 'upper', 'zip', 'zip_example' ] ), $code );
+			$this->assertMatchesRegularExpression( '/^[ACSZ]*$/', $row['require'] ?? '', $code );
+			$this->assertMatchesRegularExpression( '/^[ACSZ]*$/', $row['upper'] ?? '', $code );
 
 			foreach ( [ $row['format'], $row['latin'] ?? '' ] as $format ) {
 				$this->assertSame( 0, preg_match( '/%(?![NOACSZn])/', $format ), $code . ': ' . $format );
@@ -298,6 +313,164 @@ final class AddressesTest extends TestCase {
 
 			$this->assertStringContainsString( '%A', $row['format'], $code );
 		}
+	}
+
+	/**
+	 * A form knows which parts its country needs filled in.
+	 */
+	public function test_a_country_says_which_parts_must_be_filled_in(): void {
+		$all = [ 'street' => true, 'city' => true, 'state' => true, 'postcode' => true ];
+
+		$this->assertSame( $all, Addresses::get_required( 'US' ) );
+		$this->assertSame( $all, Addresses::get_required( 'ca' ) );
+
+		// Britain's county is there to be filled in, not required.
+		$this->assertSame( array_merge( $all, [ 'state' => false ] ), Addresses::get_required( 'GB' ) );
+		$this->assertSame( array_merge( $all, [ 'state' => false ] ), Addresses::get_required( 'DE' ) );
+
+		// Hong Kong needs its area and has no postcode; Singapore no town.
+		$this->assertSame( array_merge( $all, [ 'city' => false, 'postcode' => false ] ), Addresses::get_required( 'HK' ) );
+		$this->assertSame( array_merge( $all, [ 'city' => false, 'state' => false ] ), Addresses::get_required( 'SG' ) );
+
+		// Ireland says nothing, so the default: a street and a town.
+		$this->assertSame( array_merge( $all, [ 'state' => false, 'postcode' => false ] ), Addresses::get_required( 'IE' ) );
+		$this->assertSame( array_merge( $all, [ 'state' => false, 'postcode' => false ] ), Addresses::get_required( 'XX' ) );
+		$this->assertSame( array_merge( $all, [ 'state' => false, 'postcode' => false ] ), Addresses::get_required( '' ) );
+	}
+
+	/**
+	 * A part a country does not have is never one it requires.
+	 */
+	public function test_a_country_never_requires_a_part_it_does_not_have(): void {
+		foreach ( array_keys( AddressFormats::FORMATS ) as $code ) {
+			$parts    = Addresses::get_parts( $code );
+			$required = Addresses::get_required( $code );
+
+			$this->assertTrue( $required['street'], $code );
+
+			foreach ( [ 'city', 'state', 'postcode' ] as $part ) {
+				$this->assertTrue( $parts[ $part ] || ! $required[ $part ], $code . ': ' . $part );
+			}
+		}
+	}
+
+	/**
+	 * A postcode has its country's shape, or not.
+	 *
+	 * @return array<string, array{0: string, 1: string, 2: bool|null}>
+	 */
+	public static function postcodes(): array {
+		return [
+			'GB'                 => [ 'GB', 'EC1Y 8SY', true ],
+			'GB lower case'      => [ 'GB', 'ec1y 8sy', true ],
+			'GB spaced out'      => [ 'GB', "  SW1A \t 1AA ", true ],
+			'GB no space'        => [ 'GB', 'SW1A1AA', true ],
+			'GB odd one'         => [ 'GB', 'GIR 0AA', true ],
+			'GB forces'          => [ 'GB', 'BFPO 61', true ],
+			'GB too long'        => [ 'GB', 'EC1Y 8SYX', false ],
+			'GB not a postcode'  => [ 'GB', 'Leeds', false ],
+			// The whole pattern, not one of its three alternatives.
+			'GB trailing words'  => [ 'GB', 'GIR 0AA please', false ],
+			'GB leading words'   => [ 'GB', 'c/o BFPO 61', false ],
+			'GB empty'           => [ 'GB', '', false ],
+			'US'                 => [ 'US', '95014', true ],
+			'US ZIP+4'           => [ 'US', '22162-1010', true ],
+			'US short'           => [ 'US', '9501', false ],
+			'US dangling dash'   => [ 'US', '95014-', false ],
+			'DE'                 => [ 'DE', '10115', true ],
+			'DE short'           => [ 'DE', '1011', false ],
+			// A browser's \d is 0 to 9, and so is this one.
+			'DE full-width'      => [ 'DE', '１０１１５', false ],
+			'CA'                 => [ 'CA', 'K1A 0B1', true ],
+			'CA lower, no space' => [ 'CA', 'k1a0b1', true ],
+			'CA no D'            => [ 'CA', 'D1A 0B1', false ],
+			'IE'                 => [ 'IE', 'A65 F4E2', true ],
+			'IE lower, no space' => [ 'ie', 'a65f4e2', true ],
+			'IE short'           => [ 'IE', 'A65 F4E', false ],
+			// Cannot tell, which is not the same as wrong.
+			'HK'                 => [ 'HK', '999077', null ],
+			'unknown'            => [ 'XX', '12345', null ],
+			'no country'         => [ '', '12345', null ],
+		];
+	}
+
+	/**
+	 * Each postcode is checked against its country's pattern.
+	 *
+	 * @param string    $country  Country code.
+	 * @param string    $postcode The postcode as typed.
+	 * @param bool|null $expected Whether it fits, or null for cannot tell.
+	 */
+	#[DataProvider( 'postcodes' )]
+	public function test_a_postcode_has_its_countrys_shape( string $country, string $postcode, ?bool $expected ): void {
+		$this->assertSame( $expected, Addresses::is_valid_postcode( $country, $postcode ) );
+	}
+
+	/**
+	 * The pattern is Google's, and a country with none has empty strings.
+	 */
+	public function test_a_country_has_a_postcode_pattern_and_an_example(): void {
+		$this->assertSame( '\\d{5}', Addresses::postcode_pattern( 'DE' ) );
+		$this->assertSame( '26133', Addresses::postcode_example( 'de' ) );
+		$this->assertSame( 'H3Z 2Y7', Addresses::postcode_example( 'CA' ) );
+		$this->assertSame( 'A65 F4E2', Addresses::postcode_example( 'IE' ) );
+
+		foreach ( [ 'HK', 'XX', '' ] as $country ) {
+			$this->assertSame( '', Addresses::postcode_pattern( $country ), $country );
+			$this->assertSame( '', Addresses::postcode_example( $country ), $country );
+		}
+	}
+
+	/**
+	 * Every pattern compiles, and fits its own example, in PHP as written.
+	 *
+	 * Both as the README says to use it, with Unicode rules, and as
+	 * is_valid_postcode() does, without.
+	 */
+	public function test_every_postcode_pattern_compiles_and_fits_its_example(): void {
+		$checked = 0;
+
+		foreach ( array_keys( AddressFormats::FORMATS ) as $code ) {
+			$pattern = Addresses::postcode_pattern( $code );
+			$example = Addresses::postcode_example( $code );
+
+			if ( '' === $pattern ) {
+				$this->assertSame( '', $example, $code );
+				$this->assertNull( Addresses::is_valid_postcode( $code, '12345' ), $code );
+
+				continue;
+			}
+
+			$this->assertNotSame( '', $example, $code );
+			$this->assertTrue( Addresses::get_parts( $code )['postcode'], $code );
+			$this->assertSame( 1, preg_match( '/^(?:' . $pattern . ')$/iu', $example ), $code . ': ' . $pattern );
+			$this->assertTrue( Addresses::is_valid_postcode( $code, $example ), $code );
+			$this->assertTrue( Addresses::is_valid_postcode( $code, ' ' . strtolower( $example ) . ' ' ), $code );
+			$this->assertFalse( Addresses::is_valid_postcode( $code, $example . '#' ), $code );
+			++$checked;
+		}
+
+		// Most of the world has a pattern; a table that lost them would pass the loop.
+		$this->assertGreaterThan( 150, $checked );
+	}
+
+	/**
+	 * A postcode is tidied, and capitalised where its country capitalises.
+	 */
+	public function test_a_postcode_is_tidied_for_its_country(): void {
+		$this->assertSame( 'EC1Y 8SY', Addresses::normalize_postcode( 'GB', 'ec1y 8sy' ) );
+		$this->assertSame( 'EC1Y 8SY', Addresses::normalize_postcode( 'gb', "  ec1y \t\u{00A0} 8sy\n" ) );
+		$this->assertSame( 'K1A 0B1', Addresses::normalize_postcode( 'CA', 'k1a 0b1' ) );
+		$this->assertSame( '95014', Addresses::normalize_postcode( 'US', ' 95014 ' ) );
+
+		// Not moved or filled in: a missing space stays missing.
+		$this->assertSame( 'EC1Y8SY', Addresses::normalize_postcode( 'GB', 'ec1y8sy' ) );
+
+		// Ireland, and a country nobody knows, keep the case it was typed in.
+		$this->assertSame( 'a65 f4e2', Addresses::normalize_postcode( 'IE', ' a65  f4e2 ' ) );
+		$this->assertSame( 'ab1 2cd', Addresses::normalize_postcode( 'XX', 'ab1   2cd' ) );
+		$this->assertSame( 'ab1 2cd', Addresses::normalize_postcode( '', 'ab1 2cd' ) );
+		$this->assertSame( '', Addresses::normalize_postcode( 'GB', '   ' ) );
 	}
 
 	/**

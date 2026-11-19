@@ -6,10 +6,11 @@
  * lay out an address form -- is served a country at a time from
  * https://chromium-i18n.appspot.com/ssl-address/data/{CC}, and is licensed
  * CC-BY 4.0 (the code around it is Apache 2.0; none of that is used). This
- * reads a folder of those files and keeps the four things a shop needs of
- * each country: the order its address is written in, the same in Latin
- * letters where the country writes in another script, and what it calls its
- * region, its postcode and its town.
+ * reads a folder of those files and keeps what a shop needs of each country:
+ * the order its address is written in, the same in Latin letters where the
+ * country writes in another script, what it calls its region, its postcode
+ * and its town, which of those a form must have filled in, and what a
+ * postcode there looks like.
  *
  * Usage:
  *
@@ -31,7 +32,16 @@
  * - Two countries are given a part the data leaves to the street lines,
  *   because shops, Stripe and WooCommerce all collect it separately: the
  *   United Kingdom's county (optional, on its own line before the postcode)
- *   and Japan's city or ward (beside the prefecture). See OVERRIDES.
+ *   and Japan's city or ward (beside the prefecture). See OVERRIDES. What
+ *   the data requires is left alone, so the county stays optional and
+ *   Japan's ward is not required.
+ * - What a country requires (`require`) and upper-cases (`upper`) is kept
+ *   for the street, town, region and postcode only, and only where the part
+ *   is in the format. A country that says nothing requires a street and a
+ *   town, as the data's default does -- less wherever it has no town.
+ * - The postcode pattern (`zip`) is kept as Google gives it: the inside of
+ *   a regular expression, matched whole and in any case, the same in PHP
+ *   and JavaScript. Of the examples (`zipex`) only the first is kept.
  *
  * @package SugarCommerce\Geo
  */
@@ -44,6 +54,11 @@ if ( 'cli' !== PHP_SAPI || empty( $argv[1] ) || ! is_dir( $argv[1] ) ) {
 }
 
 const KEPT = [ 'N', 'O', 'A', 'C', 'S', 'Z' ];
+
+/**
+ * The parts a form can require or write in capitals: not a name or company.
+ */
+const CHECKED = [ 'A', 'C', 'S', 'Z' ];
 
 /**
  * The two places this departs from the data. See the file comment.
@@ -123,6 +138,26 @@ foreach ( glob( $folder . '/[A-Z][A-Z].json' ) as $file ) {
 		$row['city'] = (string) $data['locality_name_type'];
 	}
 
+	// Which parts must be filled in, and which are written in capitals, of
+	// those the format has, always in the order A C S Z. Stored only where
+	// they are not the default, which Addresses falls back to.
+	$formats = $row['format'] . ( $row['latin'] ?? '' );
+	$keep    = static fn( string $letters ): string => implode(
+		'',
+		array_filter( CHECKED, static fn( string $letter ): bool => str_contains( $letters, $letter ) && str_contains( $formats, '%' . $letter ) )
+	);
+
+	foreach ( [ 'require', 'upper' ] as $key ) {
+		if ( $keep( (string) $data[ $key ] ) !== $default[ $key ] ) {
+			$row[ $key ] = $keep( (string) $data[ $key ] );
+		}
+	}
+
+	if ( str_contains( $row['format'], '%Z' ) && ! empty( $data['zip'] ) ) {
+		$row['zip']         = (string) $data['zip'];
+		$row['zip_example'] = explode( ',', (string) ( $data['zipex'] ?? '' ) )[0];
+	}
+
 	$rows[ $code ] = $row;
 }
 
@@ -144,8 +179,8 @@ foreach ( $rows as $code => $row ) {
 
 $template = (string) file_get_contents( __DIR__ . '/address-formats.tpl' );
 $output   = str_replace(
-	[ '{{DEFAULT}}', '{{ROWS}}', '{{DATE}}', '{{COUNT}}' ],
-	[ $fallback, rtrim( $body, "\n" ), gmdate( 'Y-m-d' ), (string) count( $rows ) ],
+	[ '{{DEFAULT}}', '{{REQUIRE}}', '{{UPPER}}', '{{ROWS}}', '{{DATE}}', '{{COUNT}}' ],
+	[ $fallback, (string) $default['require'], (string) $default['upper'], rtrim( $body, "\n" ), gmdate( 'Y-m-d' ), (string) count( $rows ) ],
 	$template
 );
 

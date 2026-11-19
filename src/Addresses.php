@@ -25,8 +25,9 @@ namespace SugarCommerce\Geo;
  * in Germany, after the state in America, on a line of its own in Britain.
  *
  * The answers come from AddressFormats, which is generated from the data
- * Google publishes for the same purpose. Nothing here validates an address
- * or looks one up: it arranges what it is given.
+ * Google publishes for the same purpose. Nothing here looks an address up.
+ * The most it checks is what a form can check on its own: which parts the
+ * country needs filled in, and whether a postcode has the country's shape.
  *
  * An address is an array of parts, all optional:
  *
@@ -188,23 +189,137 @@ class Addresses {
 	 * of them. A country that is empty or unknown shows every box: not known is
 	 * not the same as known to have none.
 	 *
-	 * Ready to be sent to a script that renames and hides the boxes when the
-	 * country changes.
+	 * Then what the form checks before it is sent: `required`, the parts that
+	 * must be filled in (get_required()), and `postcode_pattern` and
+	 * `postcode_example`, the shape of a postcode there and one that fits it,
+	 * both empty where nothing is known.
+	 *
+	 * Ready to be sent to a script that renames, hides and checks the boxes
+	 * when the country changes, one country at a time.
 	 *
 	 * @param string $country Country code (case-insensitive), or empty.
 	 *
-	 * @return array{city: string, state: string, postcode: string, has_city: bool, has_state: bool, has_postcode: bool, has_states: bool}
+	 * @return array{city: string, state: string, postcode: string, has_city: bool, has_state: bool, has_postcode: bool, has_states: bool, required: array{street: bool, city: bool, state: bool, postcode: bool}, postcode_pattern: string, postcode_example: string}
 	 */
 	public static function get_fields( string $country ): array {
 		$country = strtoupper( trim( $country ) );
 		$parts   = self::get_parts( $country );
 
 		return self::get_labels( $country ) + [
-			'has_city'     => $parts['city'],
-			'has_state'    => $parts['state'],
-			'has_postcode' => $parts['postcode'],
-			'has_states'   => [] !== Regions::for( $country ),
+			'has_city'         => $parts['city'],
+			'has_state'        => $parts['state'],
+			'has_postcode'     => $parts['postcode'],
+			'has_states'       => [] !== Regions::for( $country ),
+			'required'         => self::get_required( $country ),
+			'postcode_pattern' => self::postcode_pattern( $country ),
+			'postcode_example' => self::postcode_example( $country ),
 		];
+	}
+
+	/**
+	 * Which parts of a country's address must be filled in.
+	 *
+	 * As the country's post needs them, not as a shop might like them: a
+	 * British county is optional, an American state is not, and Hong Kong
+	 * needs its area but not its district. A part the country does not have
+	 * is never required. A country that is empty or unknown needs a street
+	 * and a town, and nothing else -- it may have no region or postcode to
+	 * give. A name is left to the form, which knows whose address it is.
+	 *
+	 * @param string $country Country code (case-insensitive), or empty.
+	 *
+	 * @return array{street: bool, city: bool, state: bool, postcode: bool}
+	 */
+	public static function get_required( string $country ): array {
+		$row     = AddressFormats::FORMATS[ strtoupper( trim( $country ) ) ] ?? [];
+		$require = $row['require'] ?? AddressFormats::REQUIRE;
+
+		return [
+			'street'   => str_contains( $require, 'A' ),
+			'city'     => str_contains( $require, 'C' ),
+			'state'    => str_contains( $require, 'S' ),
+			'postcode' => str_contains( $require, 'Z' ),
+		];
+	}
+
+	/**
+	 * What a postcode looks like in a country.
+	 *
+	 * The inside of a regular expression, as Google gives it, to be matched
+	 * against the whole postcode in any case: in PHP
+	 * `'/^(?:' . $pattern . ')$/i'`, in a script
+	 * `new RegExp( '^(?:' + $pattern + ')$', 'i' )`. The group matters --
+	 * Britain's pattern is three alternatives. Empty where the country has
+	 * no postcode or the data does not describe it, and for a country that
+	 * is empty or unknown.
+	 *
+	 * @param string $country Country code (case-insensitive), or empty.
+	 *
+	 * @return string
+	 */
+	public static function postcode_pattern( string $country ): string {
+		return AddressFormats::FORMATS[ strtoupper( trim( $country ) ) ]['zip'] ?? '';
+	}
+
+	/**
+	 * A postcode from a country, for a placeholder or an error message.
+	 *
+	 * Real, and matched by postcode_pattern(). Empty wherever that is.
+	 *
+	 * @param string $country Country code (case-insensitive), or empty.
+	 *
+	 * @return string
+	 */
+	public static function postcode_example( string $country ): string {
+		return AddressFormats::FORMATS[ strtoupper( trim( $country ) ) ]['zip_example'] ?? '';
+	}
+
+	/**
+	 * Whether a postcode has its country's shape.
+	 *
+	 * Only the shape: "SW1A 1AA" is a British postcode whether or not anybody
+	 * lives there. Spaces at the ends are ignored and a run of them inside
+	 * counts as one, and case does not matter. Matched without Unicode
+	 * rules, so `\d` is 0 to 9 and nothing else, as it is in a browser:
+	 * a form and its server never disagree.
+	 *
+	 * Null where the country has no pattern -- it has no postcode, the data
+	 * does not describe it, or the country is not known. That is "cannot
+	 * tell", not "wrong", and a form should let the postcode through.
+	 *
+	 * @param string $country  Country code (case-insensitive), or empty.
+	 * @param string $postcode The postcode as typed.
+	 *
+	 * @return bool|null
+	 */
+	public static function is_valid_postcode( string $country, string $postcode ): ?bool {
+		$pattern = self::postcode_pattern( $country );
+
+		if ( '' === $pattern ) {
+			return null;
+		}
+
+		return 1 === preg_match( '/^(?:' . $pattern . ')$/iD', self::normalize_postcode( $country, $postcode ) );
+	}
+
+	/**
+	 * A postcode tidied for storing and printing.
+	 *
+	 * Spaces at the ends go and a run of them inside becomes one, and the
+	 * letters are made capitals where the country writes its postcodes in
+	 * capitals ("ec1y 8sy" is "EC1Y 8SY" in Britain). Nothing is added or
+	 * moved: a postcode typed without its space keeps it out.
+	 *
+	 * @param string $country  Country code (case-insensitive), or empty.
+	 * @param string $postcode The postcode as typed.
+	 *
+	 * @return string
+	 */
+	public static function normalize_postcode( string $country, string $postcode ): string {
+		$postcode = trim( preg_replace( '/\s+/u', ' ', $postcode ) ?? $postcode );
+		$upper    = AddressFormats::FORMATS[ strtoupper( trim( $country ) ) ]['upper'] ?? AddressFormats::UPPER;
+
+		return str_contains( $upper, 'Z' ) ? strtoupper( $postcode ) : $postcode;
 	}
 
 	/**

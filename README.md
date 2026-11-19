@@ -24,6 +24,8 @@ It does not work out which country a visitor is in (that is
 - Offer the states or provinces of the country picked, for a dependent dropdown
 - Print an address in its country's order, and name the boxes of an address
   form for the country chosen -- or hide the ones it does not have
+- Say which boxes the country needs filled in, and check and tidy a postcode
+  against the country's own pattern
 - Decide VAT with EU membership; group by continent; flag high-risk and
   sanctioned countries for fraud rules
 - Show a flag that looks the same on every machine (a bundled SVG), or the emoji
@@ -49,7 +51,8 @@ $state   = Regions::sanitize( (string) $country, $_POST['state'] ?? '' );
 // The provinces for a dependent dropdown, and what to call the boxes.
 Regions::for( 'CA' );          // [ 'AB' => 'Alberta', 'BC' => 'British Columbia', ... ]
 Addresses::get_fields( 'GB' ); // [ 'city' => 'Town or city', 'state' => 'County', 'postcode' => 'Postcode',
-                               //   'has_city' => true, 'has_state' => true, 'has_postcode' => true, 'has_states' => false ]
+                               //   'has_city' => true, 'has_state' => true, 'has_postcode' => true, 'has_states' => false,
+                               //   'required' => [ ... ], 'postcode_pattern' => '...', 'postcode_example' => 'EC1Y 8SY' ]
 
 // The receipt.
 Addresses::format( [
@@ -97,6 +100,53 @@ of the family is never taken for an unprefixed copy.
 
 `is_high_risk()` is a signal to weigh, not a reason to refuse. `is_sanctioned()`
 is a coarse first gate, not a compliance product: both are point-in-time lists.
+
+## Checking an address form
+
+What the form can check before it is sent, from the same Google data: which
+parts the country's post needs, and what its postcodes look like. Only the
+shape -- nothing here looks an address up.
+
+```php
+Addresses::get_required( 'US' ); // [ 'street' => true, 'city' => true, 'state' => true, 'postcode' => true ]
+Addresses::get_required( 'GB' ); // the county is optional: 'state' => false
+Addresses::get_required( 'HK' ); // the area, not the district, and no postcode
+Addresses::get_required( '' );   // street and town only, until the country is chosen
+
+Addresses::is_valid_postcode( 'GB', ' ec1y   8sy ' ); // true: spacing and case do not matter
+Addresses::is_valid_postcode( 'US', '9501' );         // false
+Addresses::is_valid_postcode( 'HK', '999077' );       // null: no pattern, so cannot tell
+
+Addresses::normalize_postcode( 'GB', 'ec1y  8sy' );   // 'EC1Y 8SY'
+Addresses::postcode_example( 'CA' );                  // 'H3Z 2Y7', for a placeholder
+```
+
+`is_valid_postcode()` gives null, not false, where the country has no
+pattern -- no postcode, one the data does not describe, or a country it does
+not know. Let the postcode through then. A postcode is tidied before it is
+checked: spaces at the ends go, a run of them inside counts as one.
+`normalize_postcode()` does the same and puts the letters in capitals where
+the country writes them that way (Britain, Canada, Malta, Argentina...), but
+never adds or moves a space. Ireland does not, by the data, so an Eircode keeps
+the case it was typed in.
+
+`postcode_pattern()` is the inside of a regular expression, as Google gives
+it, for the browser to check the same thing the server does. Match it whole
+and in any case:
+
+```php
+preg_match( '/^(?:' . $pattern . ')$/i', $postcode );
+```
+
+```js
+new RegExp( '^(?:' + pattern + ')$', 'i' ).test( postcode );
+```
+
+Keep the group: Britain's pattern is three alternatives, and without it the
+anchors hold only the first and last. Leave out PHP's `u` flag, as the library
+does, and `\d` is 0 to 9 as it is in a browser, not any digit in Unicode.
+`get_fields()` carries `required`, `postcode_pattern` and `postcode_example`
+too, so one payload per country is all a script needs.
 
 ## Moving from arraypress/wp-*
 
