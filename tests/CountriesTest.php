@@ -11,6 +11,7 @@ namespace SugarCommerce\Geo\Tests;
 
 use SugarCommerce\Geo\Countries;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -366,11 +367,19 @@ final class CountriesTest extends TestCase {
 	 *
 	 * So that it goes straight into a dropdown, and Åland Islands is beside
 	 * Afghanistan rather than after Zimbabwe, where a byte sort puts it.
+	 *
+	 * The accents come off by decomposition, not iconv: what iconv makes of
+	 * them depends on the server. macOS's spells São as `s~ao`, which sorted
+	 * it after Syria and hid it there; glibc's turns it into `s?o` in the C
+	 * locale.
 	 */
+	#[RequiresPhpExtension( 'intl' )]
 	public function test_the_list_is_in_order_of_name(): void {
-		$fold   = static fn( string $name ): string => strtolower( (string) iconv( 'UTF-8', 'ASCII//TRANSLIT', $name ) );
+		$fold   = static fn( string $name ): string => strtolower( (string) preg_replace( '/\p{Mn}+/u', '', (string) \Normalizer::normalize( $name, \Normalizer::FORM_D ) ) );
 		$names  = array_map( $fold, array_values( Countries::all() ) );
 		$sorted = $names;
+
+		$this->assertSame( [], preg_grep( '/[^\x20-\x7E]/', $names ), 'Every name folds to plain letters.' );
 
 		sort( $sorted, SORT_STRING );
 
