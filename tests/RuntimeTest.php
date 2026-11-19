@@ -52,6 +52,8 @@ final class RuntimeTest extends TestCase {
 			'a leading slash'     => [ '\\MyShop\\SugarCommerce\\Geo\\Utils', 'myshop_sugarcommerce_geo' ],
 			'a mixed-case prefix' => [ 'My_Shop2\\SugarCommerce\\Geo\\Utils', 'my_shop2_sugarcommerce_geo' ],
 			'nothing at all'      => [ '', 'sugarcommerce_geo' ],
+			'a plugin namespace'  => [ 'ArrayPress\\EDD\\FraudFilter\\Lib\\Geo\\Utils', 'arraypress_edd_fraudfilter_sugarcommerce_geo' ],
+			'a one-segment Lib'   => [ 'Playground\\Lib\\Geo\\Utils', 'playground_sugarcommerce_geo' ],
 		];
 	}
 
@@ -70,5 +72,16 @@ final class RuntimeTest extends TestCase {
 		);
 		$this->assertSame( 'sugarcart_sugarcommerce_geo', Runtime::prefix_for( 'SugarCart\\Vendor\\SugarCommerce\\Geo\\Utils' ), 'A plugin outside the family keeps its name.' );
 		$this->assertSame( 'sugarcommerce_geo', Runtime::prefix_for( '\\SugarCommerce\\Geo\\Utils\\' ) );
+	}
+
+	/**
+	 * Two plugins under one vendor, each with its packages in its own Lib, are
+	 * two builds: the vendor segment they share does not name either.
+	 */
+	public function test_plugins_sharing_a_vendor_are_told_apart(): void {
+		$this->assertNotSame(
+			Runtime::prefix_for( 'ArrayPress\\EDD\\FraudFilter\\Lib\\Geo\\Utils' ),
+			Runtime::prefix_for( 'ArrayPress\\EDD\\SalePrices\\Lib\\Geo\\Utils' )
+		);
 	}
 }
