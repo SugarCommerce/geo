@@ -148,45 +148,21 @@ does, and `\d` is 0 to 9 as it is in a browser, not any digit in Unicode.
 `get_fields()` carries `required`, `postcode_pattern` and `postcode_example`
 too, so one payload per country is all a script needs.
 
-## Moving from arraypress/wp-*
+## Security
 
-`arraypress/wp-countries` and the retired `sugarcommerce/countries` are both
-this package. Classes keep their names and methods under `SugarCommerce\Geo`.
-
-| Was | Now |
-| --- | --- |
-| `ArrayPress\Countries\Countries` | `SugarCommerce\Geo\Countries` (every method, same name) |
-| `ArrayPress\Countries\Regions` | `SugarCommerce\Geo\Regions` (every method, same name) |
-| `ArrayPress\Countries\Addresses` | `SugarCommerce\Geo\Addresses` (every method, same name) |
-| `ArrayPress\Countries\AddressFormats` | `SugarCommerce\Geo\AddressFormats` |
-| `ArrayPress\Countries\Flags` | `SugarCommerce\Geo\Flags` (every method, same name, but `dir_url()`) |
-| `Flags::dir_url( $dir )` | `SugarCommerce\Plugin\Assets::path_to_url( $dir )` -- no trailing slash, null outside WordPress |
-| filter `arraypress_countries_flags_url` | `sugarcommerce_geo_flags_url`, prefixed per Strauss build (`Utils\Runtime::hook( 'flags_url' )`) |
-| text domain `arraypress` (address labels) | `sugarcommerce` |
-| `get_country_name()` | `Countries::get_name()` |
-| `get_country_flag()` | `Countries::get_flag()` |
-| `get_country_continent()` | `Countries::get_continent()` |
-| `sanitize_country_code()` | `Countries::sanitize()` |
-| `get_country_options()` | `Countries::all()` |
-| `render_country()` | `Countries::render()` |
-| `get_regions()` | `Regions::for()` |
-| `get_region_name()` | `Regions::get_name()` |
-| `country_has_regions()` | `Regions::has()` |
-| `sanitize_region_code()` | `Regions::sanitize()` |
-| `format_address()` | `Addresses::format()` |
-| `get_address_labels()` | `Addresses::get_labels()` |
-| `get_address_parts()` | `Addresses::get_parts()` |
-| SaaS `Country::name()` | `Countries::get_name()` -- gives the code back, not null, when unknown; `exists()` to ask |
-| SaaS `Country::code()` / `codes()` / `flag()` / `eu()` | `Countries::get_code()` / `get_codes()` / `get_flag()` / `get_eu_countries()` |
-| SaaS `Country::sanitize_list()`, `search()`, `is_*()` | same names on `Countries` |
-| SaaS `Country::currency()` | not here: `sugarcommerce/money` |
-
-The global functions are gone: a library bundled into several plugins cannot
-safely define them. What else changed: `all()`, the EU, risk and sanctions
-lists and `get_by_continent()` now come back in order of name (Åland Islands
-beside Afghanistan, Kosovo under K, Samoa under S); a name is matched and
-searched in any case, accented capitals included; and the emoji flag no longer
-uses the deprecated `HTML-ENTITIES` conversion.
+- A posted country or region is checked against the tables (`sanitize()`,
+  `sanitize_list()`), never taken as sent.
+- A flag's code is two letters or nothing, so it is never a path out of the
+  flags folder; a table in `data/` is read by name, never by path.
+- `render()` and `Flags::img()` escape what they print, and a URL `esc_url()`
+  refuses gives no image at all. Everything else is raw text: escape it for
+  where it goes.
+- Every postcode pattern is bounded and matched whole, so nothing typed into a
+  postcode box can make it backtrack without end, in PHP or the browser. A test
+  holds every pattern to that.
+- The bundled SVG flags are tested for scripts, event handlers and references
+  to anywhere else, and are served from the shop itself: no third party learns
+  which countries it sells to.
 
 ## Requirements
 
@@ -198,9 +174,9 @@ uses the deprecated `HTML-ENTITIES` conversion.
 GPL-3.0-or-later, not the usual GPL-2.0-or-later, because of the first of
 three things in it that are somebody else's, each under its own licence:
 
-- **`src/Regions.php`** -- the subdivision table follows WooCommerce's
+- **`data/regions.php`** -- the subdivision table follows WooCommerce's
   `i18n/states.php`, and WooCommerce is **GPL-3.0-or-later**.
-- **`src/AddressFormats.php`** -- generated from the metadata behind Google's
+- **`data/address-formats.php`** -- generated from the metadata behind Google's
   [libaddressinput](https://github.com/google/libaddressinput), **CC-BY 4.0**;
   the file's header is the attribution, and `bin/generate-address-formats.php`
   says what is taken and the two places it is added to.
