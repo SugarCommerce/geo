@@ -210,6 +210,48 @@ class Countries {
 	}
 
 	/**
+	 * The countries a search term names: what somebody typed into a list's
+	 * search box, as the two-letter codes its rows hold.
+	 *
+	 * "germany", "Germ" and "de" are all `DE`. A term names a country when
+	 * it is the start of the country's name, one whole word of it
+	 * ("kingdom", "korea"), or the code itself -- not when it is merely
+	 * somewhere inside the name: "land" is not a search for Finland, Poland
+	 * and thirty others. Fewer than three letters is a code or nothing.
+	 * Stricter than search(), which matches anywhere, as a picker should.
+	 *
+	 * @param string                     $term  What was typed.
+	 * @param array<string, string>|null $names Code => name to match
+	 *                                          against: the site's own,
+	 *                                          translated, as its dropdowns
+	 *                                          have them. Default this list.
+	 *
+	 * @return list<string>
+	 * @since 1.1.0
+	 */
+	public static function search_codes( string $term, ?array $names = null ): array {
+		$term  = mb_strtolower( trim( $term ), 'UTF-8' );
+		$codes = [];
+
+		if ( '' === $term ) {
+			return [];
+		}
+
+		foreach ( $names ?? self::countries() as $code => $name ) {
+			$name = mb_strtolower( (string) $name, 'UTF-8' );
+
+			$matches = mb_strtolower( (string) $code, 'UTF-8' ) === $term
+				|| ( mb_strlen( $term ) >= 3 && ( str_starts_with( $name, $term ) || in_array( $term, (array) preg_split( '/[^\p{L}\p{N}]+/u', $name, -1, PREG_SPLIT_NO_EMPTY ), true ) ) );
+
+			if ( $matches ) {
+				$codes[] = (string) $code;
+			}
+		}
+
+		return $codes;
+	}
+
+	/**
 	 * A code checked and tidied, or nothing.
 	 *
 	 * @param string $code What was given. Trimmed and upper-cased.

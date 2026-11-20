@@ -425,4 +425,32 @@ final class CountriesTest extends TestCase {
 		$this->assertSame( [], Countries::sanitize_list( '' ) );
 		$this->assertSame( [ 'FR' ], Countries::sanitize_list( [ 'fr', 7, null, [ 'DE' ], 'XX' ] ) );
 	}
+
+	/**
+	 * What somebody types into a list's search box, and the countries it
+	 * names: the start of a name, a whole word of it, or the code -- not
+	 * merely somewhere inside a name.
+	 */
+	public function test_what_a_search_term_names(): void {
+		$names = [ 'DE' => 'Germany', 'GB' => 'United Kingdom', 'US' => 'United States', 'FI' => 'Finland', 'GE' => 'Georgia' ];
+
+		$this->assertSame( [ 'DE' ], Countries::search_codes( 'germany', $names ) );
+		$this->assertSame( [ 'DE' ], Countries::search_codes( '  Germ ', $names ) );
+		$this->assertSame( [ 'DE' ], Countries::search_codes( 'de', $names ) );
+		$this->assertSame( [ 'DE' ], Countries::search_codes( 'DE', $names ) );
+		$this->assertSame( [ 'GB' ], Countries::search_codes( 'kingdom', $names ) );
+		$this->assertSame( [ 'GB', 'US' ], Countries::search_codes( 'united', $names ) );
+
+		// Inside a name is not a search for it, and nor are two letters
+		// that are not a code.
+		$this->assertSame( [], Countries::search_codes( 'land', $names ) );
+		$this->assertSame( [], Countries::search_codes( 'ge rm', $names ) );
+		$this->assertSame( [], Countries::search_codes( 'zz', $names ) );
+		$this->assertSame( [], Countries::search_codes( 'un', $names ) );
+		$this->assertSame( [], Countries::search_codes( '', $names ) );
+
+		// The package's own list when none is given, accents and all.
+		$this->assertContains( 'DE', Countries::search_codes( 'germany' ) );
+		$this->assertContains( 'AX', Countries::search_codes( 'åland' ) );
+	}
 }

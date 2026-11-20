@@ -20,6 +20,7 @@ It does not work out which country a visitor is in (that is
 - Fill a country dropdown, in order of name, and turn a stored code back into
   the name
 - Read "UK", "USA", "Holland" or a code out of a CSV column as the country it means
+- Turn what somebody typed into a list's search box -- "germany", "Germ", "de" -- into the codes its rows hold
 - Clean a posted code, or a stored list of them, down to real countries
 - Offer the states or provinces of the country picked, for a dependent dropdown
 - Print an address in its country's order, and name the boxes of an address
@@ -69,6 +70,10 @@ echo Flags::img( 'GB' ) . ' ' . esc_html( Countries::get_name( 'GB' ) );
 if ( Countries::is_eu( $order_country ) ) {
     // VAT rules apply.
 }
+
+// A list's search box: the start of a name, a whole word of it, or the code.
+Countries::search_codes( 'kingdom' );   // [ 'GB' ]; 'land' names nothing
+Countries::search( 'land' );            // a picker's: anywhere in the name
 ```
 
 Germany puts the postcode first and has no place for a state; Japan, China
