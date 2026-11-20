@@ -455,6 +455,50 @@ final class AddressesTest extends TestCase {
 	}
 
 	/**
+	 * No pattern can be made to backtrack without end.
+	 *
+	 * A postcode is typed by whoever fills in the form, and its pattern is
+	 * run against it here and in the browser. Every pattern is bounded --
+	 * no `*`, no `+`, no `{n,}` -- so none can repeat a repetition, and a
+	 * long string of whatever the worst case is fails at once, with the JIT
+	 * and without it. The data is Google's: this is what stops a new
+	 * pattern from it arriving with a regenerated table unnoticed.
+	 */
+	public function test_no_postcode_pattern_can_backtrack_without_end(): void {
+		$jit     = ini_get( 'pcre.jit' );
+		$limit   = ini_get( 'pcre.backtrack_limit' );
+		$inputs  = [ str_repeat( '1', 20000 ), str_repeat( 'A', 20000 ), str_repeat( 'A1 ', 7000 ), str_repeat( '-', 20000 ), 'SW1A 1AA' . str_repeat( ' ', 20000 ) . '!' ];
+		$checked = 0;
+
+		ini_set( 'pcre.jit', '0' );
+		ini_set( 'pcre.backtrack_limit', '100000' );
+
+		try {
+			foreach ( array_keys( AddressFormats::all() ) as $code ) {
+				$pattern = Addresses::postcode_pattern( $code );
+
+				if ( '' === $pattern ) {
+					continue;
+				}
+
+				$this->assertSame( 0, preg_match( '/(?<!\\\\)(?:[*+]|\{\d+,\})/', $pattern ), $code . ' repeats without a bound: ' . $pattern );
+
+				foreach ( $inputs as $input ) {
+					$this->assertFalse( Addresses::is_valid_postcode( $code, $input ), $code );
+					$this->assertSame( PREG_NO_ERROR, preg_last_error(), $code . ': ' . preg_last_error_msg() );
+				}
+
+				++$checked;
+			}
+		} finally {
+			ini_set( 'pcre.jit', (string) $jit );
+			ini_set( 'pcre.backtrack_limit', (string) $limit );
+		}
+
+		$this->assertGreaterThan( 150, $checked );
+	}
+
+	/**
 	 * A postcode is tidied, and capitalised where its country capitalises.
 	 */
 	public function test_a_postcode_is_tidied_for_its_country(): void {

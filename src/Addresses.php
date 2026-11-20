@@ -416,6 +416,10 @@ class Addresses {
 	 * is in a script other than Latin, and in the Latin order otherwise --
 	 * "〒150-0001 / 東京都渋谷区" or "Shibuya-ku, Tokyo / 150-0001".
 	 *
+	 * The lines are text as it was typed, not escaped: a receipt, an email,
+	 * a CSV and a label each escape them their own way, and esc_html() each
+	 * line is the way for a page.
+	 *
 	 * @param array<string, mixed> $address      The parts. See the class comment.
 	 * @param bool                 $with_country Whether the country's name is the last line.
 	 *
