@@ -84,7 +84,7 @@ class Addresses {
 	 *                new line.
 	 */
 	public static function get_format( string $country, bool $latin = false ): string {
-		$row = AddressFormats::FORMATS[ strtoupper( trim( $country ) ) ] ?? null;
+		$row = AddressFormats::get( $country );
 
 		if ( null === $row ) {
 			return AddressFormats::UNKNOWN;
@@ -127,7 +127,7 @@ class Addresses {
 	 */
 	public static function get_types( string $country ): array {
 		$country  = strtoupper( trim( $country ) );
-		$row      = AddressFormats::FORMATS[ $country ] ?? [];
+		$row      = AddressFormats::get( $country ) ?? [];
 		$postcode = $row['postcode'] ?? 'postal';
 
 		if ( 'postal' === $postcode && in_array( $country, self::SAYS_POSTCODE, true ) ) {
@@ -231,7 +231,7 @@ class Addresses {
 	 * @return array{street: bool, city: bool, state: bool, postcode: bool}
 	 */
 	public static function get_required( string $country ): array {
-		$row     = AddressFormats::FORMATS[ strtoupper( trim( $country ) ) ] ?? [];
+		$row     = AddressFormats::get( $country ) ?? [];
 		$require = $row['require'] ?? AddressFormats::REQUIRE;
 
 		return [
@@ -258,7 +258,7 @@ class Addresses {
 	 * @return string
 	 */
 	public static function postcode_pattern( string $country ): string {
-		return AddressFormats::FORMATS[ strtoupper( trim( $country ) ) ]['zip'] ?? '';
+		return AddressFormats::get( $country )['zip'] ?? '';
 	}
 
 	/**
@@ -271,7 +271,7 @@ class Addresses {
 	 * @return string
 	 */
 	public static function postcode_example( string $country ): string {
-		return AddressFormats::FORMATS[ strtoupper( trim( $country ) ) ]['zip_example'] ?? '';
+		return AddressFormats::get( $country )['zip_example'] ?? '';
 	}
 
 	/**
@@ -317,7 +317,7 @@ class Addresses {
 	 */
 	public static function normalize_postcode( string $country, string $postcode ): string {
 		$postcode = trim( preg_replace( '/\s+/u', ' ', $postcode ) ?? $postcode );
-		$upper    = AddressFormats::FORMATS[ strtoupper( trim( $country ) ) ]['upper'] ?? AddressFormats::UPPER;
+		$upper    = AddressFormats::get( $country )['upper'] ?? AddressFormats::UPPER;
 
 		return str_contains( $upper, 'Z' ) ? strtoupper( $postcode ) : $postcode;
 	}

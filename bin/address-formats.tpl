@@ -14,76 +14,33 @@
  * generator's own comment says what is left out and the two places the data
  * is added to. Do not edit by hand: change the generator and run it again.
  *
- * Two licences, then. The data in the table below is Google's and is used
- * under CC-BY 4.0, with this notice as the attribution it asks for; it has
- * been changed as the generator describes. The code around it is
+ * The data in this file is Google's and is used under CC-BY 4.0, with this
+ * notice as the attribution it asks for; it has been changed as the
+ * generator describes. The code that reads it, AddressFormats, is
  * GPL-3.0-or-later, like the rest of the library.
  *
+ * Formats, by country. `format` is the address as the country writes it;
+ * `latin`, where there is one, the same address in Latin letters, for a
+ * country whose own order belongs to its own script. `region`, `postcode`
+ * and `city` say what the part is called there, and are present only where
+ * it is not the usual province, postal code and city. A country that is not
+ * here is written as AddressFormats::UNKNOWN.
+ *
+ * `require` is the parts a form must have filled in, and `upper` the parts
+ * written in capitals, as letters from A C S Z; each is present only where
+ * it is not AddressFormats::REQUIRE or AddressFormats::UPPER. `zip` is what
+ * a postcode there looks like -- the inside of a regular expression, to be
+ * matched whole and in any case -- and `zip_example` one that fits it. A
+ * country with no `zip` has no postcode, or none the data can describe.
+ *
  * @package     SugarCommerce\Geo
- * @copyright   Copyright (c) 2026, ArrayPress Limited (the code). Address
- *              data copyright Google LLC, CC-BY 4.0.
- * @license     GPL-3.0-or-later for the code; CC-BY-4.0 for the data
+ * @copyright   Address data copyright Google LLC, CC-BY 4.0.
+ * @license     CC-BY-4.0
  * @author      David Sherlock
  */
 
 declare( strict_types=1 );
 
-namespace SugarCommerce\Geo;
-
-/**
- * AddressFormats class
- *
- * The table and nothing else. Addresses is what reads it.
- *
- * @since 1.0.0
- */
-class AddressFormats {
-
-	/**
-	 * The format of a country that is not in the table at all.
-	 *
-	 * Every part, in the order most of the world reads without surprise.
-	 * Not the same thing as a country that is in the table with a short
-	 * format: that one is known to have no postcode, and this one is only
-	 * not known.
-	 *
-	 * The parts are %N name, %O organisation, %A street lines, %C town,
-	 * %S region, %Z postcode; %n starts a new line; anything else is
-	 * printed as it is.
-	 */
-	public const UNKNOWN = '%N%n%O%n%A%n%C%n%S%n%Z';
-
-	/**
-	 * The parts that must be filled in where a country does not say.
-	 *
-	 * The data's own default, used for a country with no `require` of its
-	 * own and for one that is not in the table: A street, C town.
-	 */
-	public const REQUIRE = '{{REQUIRE}}';
-
-	/**
-	 * The parts written in capitals where a country does not say.
-	 */
-	public const UPPER = '{{UPPER}}';
-
-	/**
-	 * Formats, by country.
-	 *
-	 * `format` is the address as the country writes it; `latin`, where
-	 * there is one, the same address in Latin letters, for a country whose
-	 * own order belongs to its own script. `region`, `postcode` and `city`
-	 * say what the part is called there, and are present only where it is
-	 * not the usual province, postal code and city. A country that is not
-	 * here is written as UNKNOWN.
-	 *
-	 * `require` is the parts a form must have filled in, and `upper` the
-	 * parts written in capitals, as letters from A C S Z; each is present
-	 * only where it is not REQUIRE or UPPER. `zip` is what a postcode there
-	 * looks like -- the inside of a regular expression, to be matched whole
-	 * and in any case -- and `zip_example` one that fits it. A country with
-	 * no `zip` has no postcode, or none the data can describe.
-	 */
-	public const FORMATS = [
+return [
 {{ROWS}}
-	];
-}
+];

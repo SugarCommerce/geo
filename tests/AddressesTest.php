@@ -298,10 +298,10 @@ final class AddressesTest extends TestCase {
 	 */
 	public function test_every_country_has_a_wellformed_format(): void {
 		foreach ( array_keys( Countries::all() ) as $code ) {
-			$this->assertArrayHasKey( $code, AddressFormats::FORMATS, $code );
+			$this->assertArrayHasKey( $code, AddressFormats::all(), $code );
 		}
 
-		foreach ( AddressFormats::FORMATS as $code => $row ) {
+		foreach ( AddressFormats::all() as $code => $row ) {
 			$this->assertSame( [], array_diff( array_keys( $row ), [ 'format', 'latin', 'region', 'postcode', 'city', 'require', 'upper', 'zip', 'zip_example' ] ), $code );
 			$this->assertMatchesRegularExpression( '/^[ACSZ]*$/', $row['require'] ?? '', $code );
 			$this->assertMatchesRegularExpression( '/^[ACSZ]*$/', $row['upper'] ?? '', $code );
@@ -342,7 +342,7 @@ final class AddressesTest extends TestCase {
 	 * A part a country does not have is never one it requires.
 	 */
 	public function test_a_country_never_requires_a_part_it_does_not_have(): void {
-		foreach ( array_keys( AddressFormats::FORMATS ) as $code ) {
+		foreach ( array_keys( AddressFormats::all() ) as $code ) {
 			$parts    = Addresses::get_parts( $code );
 			$required = Addresses::get_required( $code );
 
@@ -430,7 +430,7 @@ final class AddressesTest extends TestCase {
 	public function test_every_postcode_pattern_compiles_and_fits_its_example(): void {
 		$checked = 0;
 
-		foreach ( array_keys( AddressFormats::FORMATS ) as $code ) {
+		foreach ( array_keys( AddressFormats::all() ) as $code ) {
 			$pattern = Addresses::postcode_pattern( $code );
 			$example = Addresses::postcode_example( $code );
 

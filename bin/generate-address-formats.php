@@ -1,6 +1,6 @@
 <?php
 /**
- * Writes src/AddressFormats.php from Google's address metadata.
+ * Writes data/address-formats.php from Google's address metadata.
  *
  * The data behind libaddressinput -- the library Chrome and Android use to
  * lay out an address form -- is served a country at a time from
@@ -163,27 +163,43 @@ foreach ( glob( $folder . '/[A-Z][A-Z].json' ) as $file ) {
 
 ksort( $rows );
 
-$fallback = tidy( (string) $default['fmt'], '' );
-$body     = '';
+// The defaults a row leaves out are AddressFormats' constants, written by
+// hand. Should the data's own defaults ever change, the rows above were
+// measured against the new ones, and the constants have to follow first.
+require_once dirname( __DIR__ ) . '/src/AddressFormats.php';
+
+$defaults = [
+	'REQUIRE' => [ (string) $default['require'], SugarCommerce\Geo\AddressFormats::REQUIRE ],
+	'UPPER'   => [ (string) $default['upper'], SugarCommerce\Geo\AddressFormats::UPPER ],
+];
+
+foreach ( $defaults as $name => [ $data_default, $constant ] ) {
+	if ( $data_default !== $constant ) {
+		fwrite( STDERR, "The data's default {$name} is now '{$data_default}': set AddressFormats::{$name} to it, then run this again.\n" );
+		exit( 1 );
+	}
+}
+
+$body = '';
 
 foreach ( $rows as $code => $row ) {
 	$width = max( array_map( 'strlen', array_keys( $row ) ) );
-	$body .= "\t\t'" . $code . "' => [\n";
+	$body .= "\t'" . $code . "' => [\n";
 
 	foreach ( $row as $key => $value ) {
-		$body .= "\t\t\t'" . $key . "'" . str_repeat( ' ', $width - strlen( $key ) ) . " => '" . addcslashes( $value, "'\\" ) . "',\n";
+		$body .= "\t\t'" . $key . "'" . str_repeat( ' ', $width - strlen( $key ) ) . " => '" . addcslashes( $value, "'\\" ) . "',\n";
 	}
 
-	$body .= "\t\t],\n";
+	$body .= "\t],\n";
 }
 
 $template = (string) file_get_contents( __DIR__ . '/address-formats.tpl' );
 $output   = str_replace(
-	[ '{{DEFAULT}}', '{{REQUIRE}}', '{{UPPER}}', '{{ROWS}}', '{{DATE}}', '{{COUNT}}' ],
-	[ $fallback, (string) $default['require'], (string) $default['upper'], rtrim( $body, "\n" ), gmdate( 'Y-m-d' ), (string) count( $rows ) ],
+	[ '{{ROWS}}', '{{DATE}}', '{{COUNT}}' ],
+	[ rtrim( $body, "\n" ), gmdate( 'Y-m-d' ), (string) count( $rows ) ],
 	$template
 );
 
-file_put_contents( dirname( __DIR__ ) . '/src/AddressFormats.php', $output );
+file_put_contents( dirname( __DIR__ ) . '/data/address-formats.php', $output );
 
 echo count( $rows ) . " countries written.\n";

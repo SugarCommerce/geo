@@ -3,6 +3,7 @@
     <description>Formatting and style. Separate from the lint: a clean lint does not mean a clean format check.</description>
 
     <file>src</file>
+    <file>data</file>
 
     <arg name="extensions" value="php"/>
     <arg name="colors"/>

@@ -17,7 +17,7 @@
 /.phpunit.result.cache export-ignore
 /.phpunit.cache export-ignore
 
-# The generator for src/AddressFormats.php, and its template
+# The generator for data/address-formats.php, and its template
 /bin export-ignore
 
 # Continuous integration

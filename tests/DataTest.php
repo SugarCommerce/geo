@@ -9,8 +9,9 @@ declare( strict_types=1 );
 
 namespace SugarCommerce\Geo\Tests;
 
+use InvalidArgumentException;
 use SugarCommerce\Geo\Countries;
-use SugarCommerce\Geo\Regions;
+use SugarCommerce\Geo\Utils\Data;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 
@@ -35,18 +36,23 @@ use ReflectionClass;
 final class DataTest extends TestCase {
 
 	/**
-	 * A private constant, read by reflection.
+	 * A table: a file in data/, or a private constant of Countries.
 	 *
 	 * Reaching past the accessors on purpose: what is being checked is whether
 	 * the tables agree, and going through the accessors would only prove they
 	 * agree with themselves.
 	 *
-	 * @param string $name Constant name.
+	 * @param string $name Constant name. COUNTRIES and CONTINENTS are the
+	 *                     files data/countries.php and data/continents.php.
 	 *
 	 * @return array<array-key, mixed>
 	 */
 	private function table( string $name ): array {
-		return (array) ( new ReflectionClass( Countries::class ) )->getConstant( $name );
+		return match ( $name ) {
+			'COUNTRIES'  => require dirname( __DIR__ ) . '/data/countries.php',
+			'CONTINENTS' => require dirname( __DIR__ ) . '/data/continents.php',
+			default      => (array) ( new ReflectionClass( Countries::class ) )->getConstant( $name ),
+		};
 	}
 
 	/**
@@ -266,12 +272,12 @@ final class DataTest extends TestCase {
 	}
 
 	/**
-	 * The regions table, read by reflection for the same reason.
+	 * The regions table, read from its file for the same reason.
 	 *
 	 * @return array<string, array<array-key, string>>
 	 */
 	private function regions(): array {
-		return (array) ( new ReflectionClass( Regions::class ) )->getConstant( 'REGIONS' );
+		return require dirname( __DIR__ ) . '/data/regions.php';
 	}
 
 	/**
@@ -346,5 +352,33 @@ final class DataTest extends TestCase {
 				$this->assertSame( html_entity_decode( $name, ENT_QUOTES, 'UTF-8' ), $name, sprintf( '%s/%s contains an entity.', $country, $code ) );
 			}
 		}
+	}
+
+	/**
+	 * The classes read the same tables these tests do.
+	 */
+	public function test_the_classes_read_the_files_in_data(): void {
+		$this->assertSame( $this->table( 'COUNTRIES' ), Data::get( 'countries' ) );
+		$this->assertSame( $this->table( 'CONTINENTS' ), Data::get( 'continents' ) );
+		$this->assertSame( $this->regions(), Data::get( 'regions' ) );
+		$this->assertSame( require dirname( __DIR__ ) . '/data/address-formats.php', Data::get( 'address-formats' ) );
+	}
+
+	/**
+	 * A table's name is a name, never a path.
+	 *
+	 * @param string $name Not a table.
+	 */
+	#[\PHPUnit\Framework\Attributes\TestWith( [ '../composer' ] )]
+	#[\PHPUnit\Framework\Attributes\TestWith( [ '../src/Countries' ] )]
+	#[\PHPUnit\Framework\Attributes\TestWith( [ '/etc/passwd' ] )]
+	#[\PHPUnit\Framework\Attributes\TestWith( [ 'countries.php' ] )]
+	#[\PHPUnit\Framework\Attributes\TestWith( [ 'Countries' ] )]
+	#[\PHPUnit\Framework\Attributes\TestWith( [ 'nowhere' ] )]
+	#[\PHPUnit\Framework\Attributes\TestWith( [ '' ] )]
+	public function test_a_table_is_read_by_name_only( string $name ): void {
+		$this->expectException( InvalidArgumentException::class );
+
+		Data::get( $name );
 	}
 }

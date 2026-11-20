@@ -3,6 +3,7 @@
     <description>Defect-hunting sniffs. Preferences live in phpcs-format.xml.dist.</description>
 
     <file>src</file>
+    <file>data</file>
 
     <arg name="extensions" value="php"/>
     <arg name="colors"/>
@@ -13,7 +14,11 @@
 
     <rule ref="PHPCompatibilityWP"/>
 
-    <rule ref="WordPress.Security"/>
+    <rule ref="WordPress.Security">
+        <!-- An exception message is for a log and a developer, never echoed
+             by this library. Whoever prints one to a page escapes it there. -->
+        <exclude name="WordPress.Security.EscapeOutput.ExceptionNotEscaped"/>
+    </rule>
     <rule ref="WordPress.DB"/>
     <rule ref="WordPress.WP.I18n"/>
 
