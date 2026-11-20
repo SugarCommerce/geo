@@ -23,7 +23,8 @@ use SugarCommerce\Geo\Utils\Data;
  *
  * ISO 3166-1 alpha-2 codes and their English names, and the questions a
  * shop keeps asking of them: is this in the EU for VAT, which continent is
- * it, is it on the list treated with more caution, is it sanctioned.
+ * it. Which countries a fraud rule weighs is sugarcommerce/security's
+ * CountryRisk.
  *
  * Returns raw values, except render(), which is for HTML and says so.
  * Escaping is otherwise the caller's job, because this data reaches HTML,
@@ -31,8 +32,7 @@ use SugarCommerce\Geo\Utils\Data;
  * corrupts it for the other three.
  *
  * The names are data/countries.php. The continents are answered in
- * Traits\Countries\Continents, and the EU, higher-risk and sanctioned lists
- * in Traits\Countries\Lists.
+ * Traits\Countries\Continents, and the EU in Traits\Countries\Lists.
  *
  * @since 1.0.0
  */

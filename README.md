@@ -27,8 +27,8 @@ It does not work out which country a visitor is in (that is
   form for the country chosen -- or hide the ones it does not have
 - Say which boxes the country needs filled in, and check and tidy a postcode
   against the country's own pattern
-- Decide VAT with EU membership; group by continent; flag high-risk and
-  sanctioned countries for fraud rules
+- Decide VAT with EU membership; group by continent (which countries a fraud
+  rule weighs is `sugarcommerce/security`'s `CountryRisk`)
 - Show a flag that looks the same on every machine (a bundled SVG), or the emoji
 
 ## Installation
@@ -103,8 +103,9 @@ itself starts `SugarCommerce\` keeps all its segments --
 `sugarcommerce_playground_vendor_sugarcommerce_geo_flags_url` -- so a plugin
 of the family is never taken for an unprefixed copy.
 
-`is_high_risk()` is a signal to weigh, not a reason to refuse. `is_sanctioned()`
-is a coarse first gate, not a compliance product: both are point-in-time lists.
+The high-risk and sanctioned lists are fraud policy rather than geography,
+and live in `sugarcommerce/security` as `CountryRisk::is_high_risk()` and
+`CountryRisk::is_sanctioned()`; names for their codes come from here.
 
 ## Checking an address form
 

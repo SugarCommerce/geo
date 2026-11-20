@@ -161,8 +161,6 @@ final class DataTest extends TestCase {
 	public static function membershipProvider(): array {
 		return [
 			'the EU'                => [ 'EU_COUNTRIES' ],
-			'the high-risk list'    => [ 'HIGH_RISK_COUNTRIES' ],
-			'the sanctioned list'   => [ 'SANCTIONED_COUNTRIES' ],
 		];
 	}
 

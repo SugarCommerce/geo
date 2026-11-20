@@ -337,8 +337,6 @@ final class CountriesTest extends TestCase {
 	public static function listProvider(): array {
 		return [
 			'the EU'              => [ 'is_eu', 'get_eu_countries' ],
-			'the high-risk list'  => [ 'is_high_risk', 'get_high_risk_countries' ],
-			'the sanctioned list' => [ 'is_sanctioned', 'get_sanctioned_countries' ],
 		];
 	}
 
@@ -392,7 +390,7 @@ final class CountriesTest extends TestCase {
 	 * Every list of countries is in order of name too.
 	 */
 	public function test_every_group_is_in_order_of_name(): void {
-		foreach ( [ Countries::get_eu_countries(), Countries::get_high_risk_countries(), Countries::get_sanctioned_countries(), Countries::get_by_continent( 'EU' ) ] as $group ) {
+		foreach ( [ Countries::get_eu_countries(), Countries::get_by_continent( 'EU' ) ] as $group ) {
 			$this->assertSame( array_keys( array_intersect_key( Countries::all(), $group ) ), array_keys( $group ) );
 		}
 	}
