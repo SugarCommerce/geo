@@ -170,6 +170,15 @@ final class FlagsTest extends TestCase {
 	}
 
 	/**
+	 * A URL the escaper refuses is no URL: no image, rather than a broken
+	 * one with an empty `src`.
+	 */
+	public function test_the_image_refuses_a_url_that_is_not_one(): void {
+		$this->assertSame( '', Flags::img( 'fr', 16, [ 'url' => 'javascript:alert(1)' ] ) );
+		$this->assertSame( '', Flags::img( 'fr', 16, [ 'url' => 'data:image/svg+xml,<svg onload=alert(1)>' ] ) );
+	}
+
+	/**
 	 * The folder's URL can be said from outside.
 	 */
 	public function test_the_base_is_filterable(): void {

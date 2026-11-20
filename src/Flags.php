@@ -152,7 +152,9 @@ class Flags {
 	 * @since 1.0.0
 	 */
 	public static function img( string $code, int $size = 16, array $args = [] ): string {
-		$url = (string) ( $args['url'] ?? self::url( $code ) );
+		// Escaped first: a URL esc_url() refuses -- javascript:, data: -- is
+		// no URL, and no URL is no image.
+		$url = esc_url( (string) ( $args['url'] ?? self::url( $code ) ) );
 
 		if ( '' === $url ) {
 			return '';
@@ -161,7 +163,7 @@ class Flags {
 		return sprintf(
 			'<img class="%1$s" src="%2$s" width="%3$d" height="%3$d" alt="%4$s" loading="lazy" decoding="async" />',
 			esc_attr( (string) ( $args['class'] ?? 'country-flag' ) ),
-			esc_url( $url ),
+			$url,
 			max( 1, $size ),
 			esc_attr( (string) ( $args['alt'] ?? '' ) )
 		);
