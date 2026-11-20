@@ -44,7 +44,7 @@ class Addresses {
 	/**
 	 * The part each letter of a format stands for.
 	 */
-	private const PARTS = [
+	private const array PARTS = [
 		'N' => 'name',
 		'O' => 'company',
 		'A' => 'street',
@@ -62,14 +62,14 @@ class Addresses {
 	 * because the codes are WooCommerce's and the formats are Google's, and
 	 * neither says which of the two a letter carries.
 	 */
-	private const REGION_AS_CODE = [ 'AU', 'BR', 'CA', 'IT', 'US' ];
+	private const array REGION_AS_CODE = [ 'AU', 'BR', 'CA', 'IT', 'US' ];
 
 	/**
 	 * Countries that say "postcode" where the rest say "postal code".
 	 *
 	 * The data has one word for both. This is spelling, not structure.
 	 */
-	private const SAYS_POSTCODE = [ 'AU', 'GB', 'GG', 'IM', 'JE', 'NZ', 'ZA' ];
+	private const array SAYS_POSTCODE = [ 'AU', 'GB', 'GG', 'IM', 'JE', 'NZ', 'ZA' ];
 
 	/**
 	 * The format a country's address is written in.

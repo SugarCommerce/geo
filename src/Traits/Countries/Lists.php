@@ -33,7 +33,7 @@ trait Lists {
 	 * The list that decides whether VAT rules apply, so it matters that GB
 	 * is absent and that the outermost regions are handled deliberately.
 	 */
-	private const EU_COUNTRIES = [
+	private const array EU_COUNTRIES = [
 		'AT',
 		'BE',
 		'BG',
@@ -70,7 +70,7 @@ trait Lists {
 	 * genuine customers live in every one of them. Not exhaustive, and worth
 	 * tuning per business.
 	 */
-	private const HIGH_RISK_COUNTRIES = [
+	private const array HIGH_RISK_COUNTRIES = [
 		'BY',
 		'BD',
 		'BR',
@@ -102,7 +102,7 @@ trait Lists {
 	 * coarse first gate for "should this checkout go ahead at all", not a
 	 * screening product: it knows nothing of names, sectors or entities.
 	 */
-	private const SANCTIONED_COUNTRIES = [
+	private const array SANCTIONED_COUNTRIES = [
 		'CU',
 		'IR',
 		'KP',

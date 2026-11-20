@@ -43,7 +43,7 @@ class Flags {
 	 *
 	 * @var string|null|false
 	 */
-	private static $base = false;
+	private static string|false|null $base = false;
 
 	/**
 	 * Which codes have a file, as they are asked about.

@@ -31,7 +31,7 @@ trait Continents {
 	/**
 	 * Continent codes, as geo-IP services give them (IPInfo, MaxMind).
 	 */
-	private const CONTINENT_CODES = [
+	private const array CONTINENT_CODES = [
 		'AF' => 'Africa',
 		'AN' => 'Antarctica',
 		'AS' => 'Asia',

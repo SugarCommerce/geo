@@ -56,7 +56,7 @@ class Countries {
 	 *
 	 * @var array<string, string>
 	 */
-	private const ALIASES = [
+	private const array ALIASES = [
 		'usa'                      => 'US',
 		'u.s.a.'                   => 'US',
 		'u.s.'                     => 'US',

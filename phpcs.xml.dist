@@ -14,6 +14,11 @@
 
     <rule ref="PHPCompatibilityWP"/>
 
+    <!-- Reads a typed constant in a trait (PHP 8.3) as a constant named "array". -->
+    <rule ref="PHPCompatibility.Keywords.ForbiddenNames.arrayFound">
+        <exclude-pattern>src/Traits/*</exclude-pattern>
+    </rule>
+
     <rule ref="WordPress.Security">
         <!-- An exception message is for a log and a developer, never echoed
              by this library. Whoever prints one to a page escapes it there. -->

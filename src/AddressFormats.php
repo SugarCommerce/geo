@@ -45,7 +45,7 @@ class AddressFormats {
 	 * %S region, %Z postcode; %n starts a new line; anything else is
 	 * printed as it is.
 	 */
-	public const UNKNOWN = '%N%n%O%n%A%n%C%n%S%n%Z';
+	public const string UNKNOWN = '%N%n%O%n%A%n%C%n%S%n%Z';
 
 	/**
 	 * The parts that must be filled in where a country does not say.
@@ -54,12 +54,12 @@ class AddressFormats {
 	 * own and for one that is not in the table: A street, C town. The
 	 * generator stops if the data's default ever stops being this.
 	 */
-	public const REQUIRE = 'AC';
+	public const string REQUIRE = 'AC';
 
 	/**
 	 * The parts written in capitals where a country does not say.
 	 */
-	public const UPPER = 'C';
+	public const string UPPER = 'C';
 
 	/**
 	 * Formats, by country.
